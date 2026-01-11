@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Groundwork Commons must be deployable by neighborhood operators with varying levels of technical expertise. The platform serves 5-50 members and should be simple to install, configure, and upgrade while maintaining the resilience and data sovereignty principles established in previous ADRs.
+Hub must be deployable by neighborhood operators with varying levels of technical expertise. The platform serves 5-50 members and should be simple to install, configure, and upgrade while maintaining the resilience and data sovereignty principles established in previous ADRs.
 
 ### Problem Statement
 
@@ -83,49 +83,49 @@ Multi-container architecture:
 
 ```yaml
 services:
-  groundwork-web:
-    image: groundwork/commons-web:latest
-    container_name: groundwork-web
+  hub-web:
+    image: hub/web:latest
+    container_name: hub-web
     depends_on:
-      - groundwork-api
+      - hub-api
     volumes:
       - ./data:/app/data
       - ./media:/app/media
     environment:
-      - API_URL=http://groundwork-api:5000
-      - DATABASE_PATH=/app/data/groundwork.db
+      - API_URL=http://hub-api:5000
+      - DATABASE_PATH=/app/data/hub.db
       - HTTPS_ENABLED=true
       - HTTPS_PORT=443
     ports:
       - "443:443"
       - "80:80"
 
-  groundwork-api:
-    image: groundwork/commons-api:latest
-    container_name: groundwork-api
+  hub-api:
+    image: hub/api:latest
+    container_name: hub-api
     volumes:
       - ./data:/app/data
       - ./media:/app/media
     environment:
-      - DATABASE_PATH=/app/data/groundwork.db
+      - DATABASE_PATH=/app/data/hub.db
     ports:
       - "5000:5000"
 
   litestream:
     image: litestream/litestream:latest
-    container_name: groundwork-litestream
+    container_name: hub-litestream
     volumes:
       - ./data:/app/data
       - ./media:/app/media
       - ./litestream.yml:/etc/litestream.yml
     command: replicate
     depends_on:
-      - groundwork-web
-      - groundwork-api
+      - hub-web
+      - hub-api
 ```
 
 **Database Volume:**
-- SQLite database stored in `./data/groundwork.db` (volume mount)
+- SQLite database stored in `./data/hub.db` (volume mount)
 - Shared across Web, API, and Litestream containers
 - Persists when containers restart
 
@@ -137,15 +137,15 @@ services:
 **Option 2: Standalone .NET Binaries**
 
 Platform-specific executables:
-- Windows: `groundwork-web.exe`, `groundwork-api.exe`
-- Linux: `groundwork-web`, `groundwork-api`
-- macOS: `groundwork-web`, `groundwork-api`
+- Windows: `hub-web.exe`, `hub-api.exe`
+- Linux: `hub-web`, `hub-api`
+- macOS: `hub-web`, `hub-api`
 
 **Installation:**
 1. Download binary for platform
 2. Extract to installation directory
 3. Configure via `appsettings.json` or environment variables
-4. Run executable: `./groundwork-web` or `./groundwork-api`
+4. Run executable: `./hub-web` or `./hub-api`
 5. Install Litestream separately and configure
 
 **Use Case:** Advanced users, non-Docker environments, development
@@ -154,30 +154,30 @@ Platform-specific executables:
 
 **Separate Containers/Processes:**
 
-**groundwork-web (Blazor Server):**
+**hub-web (Blazor Server):**
 - Serves web interface on port 443 (HTTPS) / 80 (HTTP)
 - Connects directly to SQLite database
 - Does NOT call API for data access (per ADR-003 note)
 - Optional: Can be excluded if operator wants API-only deployment
 
-**groundwork-api (ASP.NET Core Web API):**
+**hub-api (ASP.NET Core Web API):**
 - Serves REST API on port 5000
 - Connects directly to SQLite database
 - Important for future mobile apps
 - Optional: Can be excluded if operator wants Web-only deployment
 
-**litestream (Replication Service):**
-- Continuously replicates SQLite database
+**litestream (Backup Service):**
+- Continuously syncs SQLite database to backup location
 - Runs only if at least one of Web or API is running
 - Configured via `litestream.yml` file
-- Replicates to cloud storage, peer nodes, or filesystem
+- Backs up to cloud storage or filesystem
 
 **Conditional Litestream:**
 - If both Web and API running: Litestream runs
 - If only Web running: Litestream runs
 - If only API running: Litestream runs
 - If neither running: Litestream doesn't run
-- Prevents duplicate replication when both components active
+- Prevents duplicate backup when both components active
 
 ### 3. Litestream Integration
 
@@ -187,49 +187,36 @@ Operators configure replication via `litestream.yml`:
 
 ```yaml
 dbs:
-  - path: /app/data/groundwork.db
+  - path: /app/data/hub.db
     replicas:
-      # Cloud storage replica (S3-compatible)
+      # Cloud storage backup (S3-compatible)
       - type: s3
         bucket: my-community-backup
-        path: groundwork
+        path: hub
         region: us-west-2
         access-key-id: ${AWS_ACCESS_KEY_ID}
         secret-access-key: ${AWS_SECRET_ACCESS_KEY}
 
-      # Peer node replica (SFTP)
-      - type: sftp
-        host: peer-node.local
-        user: backup
-        path: /backups/groundwork
-        key-path: /etc/ssh/backup_key
-
-      # Local filesystem replica
+      # Local filesystem backup
       - type: file
-        path: /mnt/backup/groundwork
+        path: /mnt/backup/hub
 ```
 
-**Replication Strategy:**
-- Default: Real-time replication (seconds)
-- Configurable: Periodic replication for lower-end hardware
-- Multiple targets: Cloud + peer + local simultaneously
+**Backup Strategy:**
+- Default: Real-time backup sync (seconds)
+- Configurable: Periodic sync for lower-end hardware
+- Cloud or local filesystem targets supported
 
-**Filesystem Replication:**
+**Media Backup:**
 
 Per ADR-007 decision and ADR-001 considerations:
 
-**If Litestream supports filesystem replication:**
-- Configure Litestream to replicate entire `/app/data` and `/app/media` directories
-- Media and database replicate together
-
-**If Litestream does NOT support filesystem replication:**
-- Litestream only replicates SQLite database
-- Separate mechanism needed for media:
+- Litestream handles SQLite database backup
+- For media files:
   - **Option A:** Scheduled rsync/rclone to same backup locations
-  - **Option B:** Application-level media sync
-  - **Option C:** Use cloud storage for media (handles own redundancy)
+  - **Option B:** Use cloud storage for media (handles own redundancy)
 
-**Implementation Note:** Determine Litestream filesystem capabilities during implementation and document accordingly.
+**Implementation Note:** Determine media backup approach during implementation and document accordingly.
 
 ### 4. Configuration Management
 
@@ -241,7 +228,7 @@ Set via Docker Compose `.env` file or system environment:
 
 ```bash
 # Database
-DATABASE_PATH=/app/data/groundwork.db
+DATABASE_PATH=/app/data/hub.db
 
 # HTTPS/TLS
 HTTPS_ENABLED=true
@@ -326,7 +313,7 @@ Optional `instance.config.json` for deployment-specific settings:
 **Configuration:**
 ```bash
 HTTPS_ENABLED=true
-DOMAIN_NAME=groundwork.myneighborhood.org
+DOMAIN_NAME=hub.myneighborhood.org
 LETSENCRYPT_EMAIL=admin@myneighborhood.org
 ```
 
@@ -386,7 +373,7 @@ docker-compose up -d
 User navigates to `https://localhost` (or configured domain):
 
 **Step 1: Welcome**
-- Explain Groundwork Commons
+- Explain Hub
 - Confirm operator wants to proceed with setup
 
 **Step 2: Community Identity**
@@ -405,9 +392,9 @@ User navigates to `https://localhost` (or configured domain):
 - Configure media upload limits
 - Display storage path/bucket
 
-**Step 5: Replication Setup**
+**Step 5: Backup Setup**
 - Review Litestream configuration (from `litestream.yml`)
-- Show replication targets
+- Show backup targets
 - Test connectivity to backup locations
 
 **Step 6: Governance Defaults**
@@ -489,39 +476,36 @@ User navigates to `https://localhost` (or configured domain):
 **Manual Backup:**
 ```bash
 # Docker
-docker exec groundwork-litestream litestream restore -o /tmp/backup.db /app/data/groundwork.db
+docker exec hub-litestream litestream restore -o /tmp/backup.db /app/data/hub.db
 
 # Binary
-litestream restore -o /tmp/backup.db /path/to/groundwork.db
+litestream restore -o /tmp/backup.db /path/to/hub.db
 ```
 
 **Restore (Manual Process):**
 
 **Scenario: Primary Node Failure**
 
-**Step 1: Retrieve Latest Replica**
+**Step 1: Retrieve Latest Backup**
 ```bash
 # From cloud storage (S3)
-litestream restore -replica s3 /path/to/groundwork.db
-
-# From peer node (SFTP)
-litestream restore -replica sftp /path/to/groundwork.db
+litestream restore -replica s3 /path/to/hub.db
 
 # From local filesystem
-cp /mnt/backup/groundwork/db /path/to/groundwork.db
+cp /mnt/backup/hub/db /path/to/hub.db
 ```
 
 **Step 2: Copy Media Files**
 - If media stored on filesystem: Restore from backup location
 - If media stored in cloud: Already available, no action needed
 
-**Step 3: Start New Primary Node**
+**Step 3: Start New Instance**
 ```bash
 # Docker
 docker-compose up -d
 
 # Binary
-./groundwork-web
+./hub-web
 ```
 
 **Step 4: Announce New Primary URL**
@@ -544,12 +528,12 @@ docker-compose up -d
 ```yaml
 # docker-compose.yml
 services:
-  groundwork-web:
+  hub-web:
     # ... (enabled)
-  groundwork-api:
+  hub-api:
     # ... (enabled)
   litestream:
-    # ... (enabled, replicates for both)
+    # ... (enabled, backs up for both)
 ```
 
 **Use Case:** Support both web users and future mobile apps
@@ -559,11 +543,11 @@ services:
 ```yaml
 # docker-compose.yml
 services:
-  groundwork-web:
+  hub-web:
     # ... (enabled)
-  # groundwork-api: (commented out)
+  # hub-api: (commented out)
   litestream:
-    # ... (enabled, replicates database)
+    # ... (enabled, backs up database)
 ```
 
 **Use Case:** Community only uses web interface, no mobile apps
@@ -573,11 +557,11 @@ services:
 ```yaml
 # docker-compose.yml
 services:
-  # groundwork-web: (commented out)
-  groundwork-api:
+  # hub-web: (commented out)
+  hub-api:
     # ... (enabled)
   litestream:
-    # ... (enabled, replicates database)
+    # ... (enabled, backs up database)
 ```
 
 **Use Case:** Mobile-only community, minimal resource usage
@@ -595,12 +579,12 @@ services:
 - `GET /api/health/db` - Returns 200 if database accessible
 
 **Litestream:**
-- `GET /metrics` - Returns replication lag, last backup time
-- `GET /healthz` - Returns 200 if replication active
+- `GET /metrics` - Returns backup lag, last backup time
+- `GET /healthz` - Returns 200 if backup active
 
 **Docker Compose Integration:**
 ```yaml
-groundwork-web:
+hub-web:
   healthcheck:
     test: ["CMD", "curl", "-f", "http://localhost/health"]
     interval: 30s
@@ -699,7 +683,7 @@ groundwork-web:
 **Installing with Docker Compose:**
 ```bash
 # 1. Download docker-compose.yml
-wget https://groundwork.org/docker-compose.yml
+wget https://hub.example.org/docker-compose.yml
 
 # 2. Configure environment (optional)
 cp .env.example .env
@@ -734,7 +718,7 @@ docker-compose logs -f
 docker-compose down
 
 # 2. Restore database
-docker run --rm -v $(pwd)/data:/app/data litestream/litestream restore -replica s3 /app/data/groundwork.db
+docker run --rm -v $(pwd)/data:/app/data litestream/litestream restore -replica s3 /app/data/hub.db
 
 # 3. Restore media (if filesystem storage)
 rsync -av backup-server:/backups/media/ ./media/
@@ -743,9 +727,9 @@ rsync -av backup-server:/backups/media/ ./media/
 docker-compose up -d
 ```
 
-**Checking Replication Status:**
+**Checking Backup Status:**
 ```bash
-docker exec groundwork-litestream litestream snapshots /app/data/groundwork.db
+docker exec hub-litestream litestream snapshots /app/data/hub.db
 ```
 
 ### Configuration Examples
@@ -758,7 +742,7 @@ docker exec groundwork-litestream litestream snapshots /app/data/groundwork.db
 **Production `.env` (Full Configuration):**
 ```bash
 # Domain and HTTPS
-DOMAIN_NAME=groundwork.myneighborhood.org
+DOMAIN_NAME=hub.myneighborhood.org
 LETSENCRYPT_EMAIL=admin@myneighborhood.org
 HTTPS_ENABLED=true
 

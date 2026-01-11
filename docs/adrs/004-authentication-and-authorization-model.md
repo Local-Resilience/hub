@@ -6,10 +6,10 @@ Accepted
 
 ## Context
 
-Groundwork Commons requires a security model that balances accessibility, security, and the unique characteristics of hyperlocal communities where members know each other personally and share physical proximity. The authentication and authorization system must work across:
+Hub requires a security model that balances accessibility, security, and the unique characteristics of hyperlocal communities where members know each other personally and share physical proximity. The authentication and authorization system must work across:
 - Web interface (Blazor Server with cookie-based auth)
 - API (REST endpoints with JWT tokens for future mobile apps)
-- Failover scenarios (credentials must survive primary node failure)
+- Backup restore scenarios (credentials must survive instance recovery)
 - Multiple devices per member
 - Password recovery in communities where members know each other in person
 
@@ -94,7 +94,7 @@ AspNetRoleClaims         # Role-based permissions (if needed)
 
 **Custom User Model:**
 ```csharp
-public class GroundworkUser : IdentityUser
+public class HubUser : IdentityUser
 {
     public string DisplayName { get; set; }
     public DateTime JoinedAt { get; set; }
@@ -173,7 +173,7 @@ Given physical proximity and personal relationships in neighborhoods:
 3. Receives password reset link via email
 4. Clicks link, sets new password
 
-**Password Reset - Admin-Assisted Flow (Unique to Groundwork):**
+**Password Reset - Admin-Assisted Flow (Unique to Hub):**
 1. Member contacts admin in person or via alternate channel
 2. Admin verifies identity in person (leverage physical proximity)
 3. Admin uses privileged function: "Reset Password for User"
@@ -302,8 +302,8 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = "groundwork-commons",
-            ValidAudience = "groundwork-app",
+            ValidIssuer = "hub",
+            ValidAudience = "hub-app",
             IssuerSigningKey = new SymmetricSecurityKey(GetSigningKeyFromDatabase())
         };
     });

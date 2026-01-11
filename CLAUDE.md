@@ -4,16 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Groundwork Commons** is a platform for hyperlocal community infrastructure (5-50 people sharing physical proximity). Built on .NET with SQLite, it enables neighborhood-scale social coordination with democratic governance and data sovereignty.
+**Hub** is a platform for hyperlocal community infrastructure (5-50 people sharing physical proximity). Built on .NET with SQLite, it provides social messaging, threads, ask/offer exchanges, community resource mapping, and proposals for democratic decision-making—all with governance-based role management.
 
-**Current Status**: Concept Development (October 2025) - Planning documentation exists, implementation has not begun.
+**Current Status**: Concept Development (January 2026) - Planning documentation exists, implementation has not begun.
 
 ## Architecture Decisions
 
 All major technical decisions are documented in [Architecture Decision Records](docs/adrs/README.md). Read these before making implementation choices:
 
-- [ADR-001](docs/adrs/001-data-replication-strategy.md): Single-primary node with continuous replication via Litestream
-- [ADR-002](docs/adrs/002-database-technology-selection.md): SQLite with JSON1 extension + Litestream for replication
+- [ADR-001](docs/adrs/001-data-replication-strategy.md): Continuous backup sync via Litestream for easy recovery
+- [ADR-002](docs/adrs/002-database-technology-selection.md): SQLite with JSON1 extension + Litestream for backup
 - [ADR-003](docs/adrs/003-application-framework-and-technology-stack.md): .NET 10+ with modular architecture (API + Blazor Server)
 - [ADR-004](docs/adrs/004-authentication-and-authorization-model.md): ASP.NET Core Identity with dual auth (cookies + JWT)
 - [ADR-005](docs/adrs/005-democratic-governance-and-proposal-system.md): Flexible proposal system with automated enforcement
@@ -37,40 +37,38 @@ When implementation begins, this project will use:
 The implementation will follow this modular architecture:
 
 ```
-Groundwork.Commons/
-├── Groundwork.Core/              # Shared class library
+Hub/
+├── Hub.Core/                     # Shared class library
 │   ├── Features/                 # Domain features
 │   ├── Infrastructure/           # Database, external integrations
 │   └── Common/                   # Shared utilities
 │
-├── Groundwork.Api/               # ASP.NET Core Web API
+├── Hub.Api/                      # ASP.NET Core Web API
 │   ├── Endpoints/                # REST endpoints
 │   ├── Common/                   # API services
 │   └── Middleware/               # Auth, logging
 │
-├── Groundwork.Web/               # Blazor Server application
+├── Hub.Web/                      # Blazor Server application
 │   ├── Components/               # Blazor components
 │   ├── Pages/                    # Blazor pages
 │   └── Shared/                   # Layouts, shared components
 │
-└── Groundwork.Mobile/            # Future: .NET MAUI
+└── Hub.Mobile/                   # Future: .NET MAUI
 ```
 
 ## Key Design Principles
 
 1. **Hyperlocal Scale**: Design for 5-50 users, not millions. Favor simplicity over complex distributed systems.
 
-2. **Single-Primary Architecture**: One authoritative write node with continuous replication to backups. No multi-master complexity.
+2. **Simple Backup & Recovery**: Data syncs continuously to a backup location via Litestream. If the instance goes down, restore from backup and spin up a new one.
 
-3. **Resilience Through Replication**: All data (including credentials, signing keys) must replicate via Litestream to survive node failover.
+3. **Democratic Governance**: Special proposal types automatically enforce vote outcomes (role changes, bans) without admin override. Roles (member, moderator, admin) are managed through community voting.
 
-4. **Democratic Governance**: Special proposal types automatically enforce vote outcomes (role changes, bans) without admin override.
+4. **Modular Deployment**: Operators choose which components to run (API-only, Web-only, or both).
 
-5. **Modular Deployment**: Node operators choose which components to run (API-only, Web-only, or both).
+5. **Hybrid Data Model**: Use relational tables for structured data (members, roles, permissions), JSON columns for flexible content (posts, profiles).
 
-6. **Hybrid Data Model**: Use relational tables for structured data (members, roles, permissions), JSON columns for flexible content (posts, profiles).
-
-7. **Community Ownership**: No external dependencies required. Must work in isolated networks.
+6. **Community Ownership**: No external dependencies required. Must work in isolated networks.
 
 ## Database Design Approach
 
@@ -93,7 +91,7 @@ Per ADR-004:
 - Use **ASP.NET Core Identity** with SQLite storage
 - **Cookie-based auth** for Blazor Server web sessions
 - **JWT tokens** for future mobile API access
-- Store JWT/cookie signing keys in SQLite database (they must replicate)
+- Store JWT/cookie signing keys in SQLite database (they sync with backup)
 - Implement **invite code system** to control community membership
 - Support **admin-assisted password reset** (leverages physical proximity)
 
@@ -185,8 +183,8 @@ When beginning implementation, follow this sequence:
 2. Configure SQLite with EF Core + ASP.NET Core Identity
 3. Implement basic authentication (login, registration)
 4. Build core domain models (Members, Posts, Comments)
-5. Create Blazor Server UI for social features
-6. Integrate Litestream for local filesystem replication
+5. Create Blazor Server UI for social features (messaging, threads, ask/offer)
+6. Integrate Litestream for backup sync
 
 **Phase 2: Democratic Governance**
 1. Implement proposal and voting system
@@ -201,9 +199,9 @@ When beginning implementation, follow this sequence:
 4. Enable modular deployment options
 
 **Phase 4: Advanced Features**
-1. Add cloud storage replication targets (Azure Blob, S3)
-2. Implement peer node SFTP replication
-3. Build monitoring for replication lag
+1. Add cloud storage backup targets (Azure Blob, S3)
+2. Add community resource mapping
+3. Build monitoring for backup status
 4. Add mobile apps (.NET MAUI)
 
 ## Development Commands
@@ -215,14 +213,14 @@ When the .NET solution exists, common commands will be:
 dotnet build
 
 # Run Blazor Server web app
-dotnet run --project Groundwork.Web
+dotnet run --project Hub.Web
 
 # Run API only
-dotnet run --project Groundwork.Api
+dotnet run --project Hub.Api
 
 # Run EF Core migrations
-dotnet ef migrations add MigrationName --project Groundwork.Core
-dotnet ef database update --project Groundwork.Web
+dotnet ef migrations add MigrationName --project Hub.Core
+dotnet ef database update --project Hub.Web
 
 # Run tests
 dotnet test
@@ -233,10 +231,10 @@ dotnet publish -c Release --self-contained -r linux-x64
 
 ## Testing Strategy
 
-- Focus on business logic in `Groundwork.Core` (high unit test coverage)
+- Focus on business logic in `Hub.Core` (high unit test coverage)
 - Integration tests for database operations (EF Core + SQLite in-memory)
 - End-to-end tests for democratic governance (proposal outcomes)
-- Test failover scenarios (restore from Litestream replica)
+- Test backup/restore scenarios (restore from Litestream backup)
 
 ## Documentation Standards
 
@@ -248,8 +246,8 @@ dotnet publish -c Release --self-contained -r linux-x64
 ## Important Constraints
 
 - **No external auth providers** in MVP (community ownership principle)
-- **No automatic failover** (manual process acceptable for 5-50 users)
-- **SQLite single-writer** is acceptable (single-primary architecture)
+- **Manual backup restore** (acceptable for 5-50 users, no complex auto-failover needed)
+- **SQLite single-writer** is acceptable (single instance architecture)
 - **Must work offline** (isolated network scenarios, post-disaster resilience)
 - **GPL v3 license** - all modifications must remain open source
 
@@ -258,11 +256,12 @@ dotnet publish -c Release --self-contained -r linux-x64
 These are planned but not yet implemented:
 
 - Mobile apps consuming the REST API (.NET MAUI)
-- Multi-target Litestream replication (cloud + peer nodes)
+- Multi-target backup locations (cloud + local)
 - Offline-first patterns for Blazor (service workers, local storage)
 - Advanced voting methods (ranked choice, quadratic voting)
 - Two-factor authentication via ASP.NET Core Identity
-- Replication monitoring and alerting
+- Backup monitoring and alerting
+- Community resource mapping features
 
 ## License
 

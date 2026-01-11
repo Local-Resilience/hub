@@ -69,11 +69,11 @@ We need a database that can:
 - Pros: Battle-tested, single-file, embeddable, no server process
 - Pros: Excellent .NET support (Microsoft.Data.Sqlite, EF Core, Dapper)
 - Pros: JSON1 extension provides document querying capabilities
-- Pros: Litestream provides continuous replication to multiple targets (S3, Azure Blob, SFTP, filesystem)
+- Pros: Litestream provides continuous backup sync to multiple targets (S3, Azure Blob, SFTP, filesystem)
 - Pros: Simple backup/restore (copy .db file)
 - Pros: Public domain license (compatible with GPL v3)
-- Cons: Single-writer limitation (acceptable for single-primary architecture)
-- Chosen: Best fit for scale, simplicity, and replication requirements
+- Cons: Single-writer limitation (acceptable for single instance architecture)
+- Chosen: Best fit for scale, simplicity, and backup requirements
 
 ## Decision
 
@@ -238,21 +238,16 @@ WHERE json_extract(profile_data, '$.bio') LIKE '%gardening%';
 ```yaml
 # /etc/litestream.yml
 dbs:
-  - path: /var/lib/groundwork/data.db
+  - path: /var/lib/hub/data.db
     replicas:
-      - type: azure
-        bucket: groundwork-backup
-        path: neighborhood-name
-
-      - type: sftp
-        host: peer-node.local
-        user: replication
-        path: /backup/data.db
+      - type: s3
+        bucket: hub-backup
+        path: community-name
 
       - type: file
         path: /mnt/backup/data.db
 
-    # Replication frequency (tune for hardware)
+    # Backup frequency (tune for hardware)
     sync-interval: 10s # Can increase for lower-end hardware
 ```
 

@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Following the decisions to use SQLite with Litestream for data storage (ADR-002) and single-primary replication (ADR-001), we need to define the application framework and technology stack for building Groundwork Commons. The platform serves 5-50 members in hyperlocal communities and must balance:
+Following the decisions to use SQLite with Litestream for data storage (ADR-002) and continuous backup (ADR-001), we need to define the application framework and technology stack for building Hub. The platform serves 5-50 members in hyperlocal communities and must balance:
 - Developer productivity and maintainability
 - Mobile-first user experience (primary interaction method)
 - Optional web access for desktop users
@@ -75,28 +75,28 @@ By the time this reaches production (2026+):
 
 ## Decision
 
-We will build Groundwork Commons as a **modular .NET application** with the following architecture:
+We will build Hub as a **modular .NET application** with the following architecture:
 
 ### 1. Application Structure
 
 ```
-Groundwork.Commons/
-├── Groundwork.Core/              # Shared class library
+Hub/
+├── Hub.Core/                     # Shared class library
 │   ├── Features/                 # Contains features by domain
 │   ├── Infrastructure/           # External infra, databases, 3rd party integrations
 │   └── Common/                   # Shared core features
 │
-├── Groundwork.Api/               # ASP.NET Core Web API
+├── Hub.Api/                      # ASP.NET Core Web API
 │   ├── Endpoints/                # REST endpoints
 │   ├── Common/                   # Common services
 │   └── Middleware/               # Auth, logging, etc.
 │
-├── Groundwork.Web/               # Blazor Server application
+├── Hub.Web/                      # Blazor Server application
 │   ├── Components/               # Blazor components
 │   ├── Pages/                    # Blazor pages
 │   └── Shared/                   # Shared layouts, components
 │
-└── Groundwork.Mobile/            # Future: .NET MAUI? (iOS/Android)
+└── Hub.Mobile/                   # Future: .NET MAUI? (iOS/Android)
     └── (Future implementation)
 ```
 
@@ -112,10 +112,10 @@ Groundwork.Commons/
 - **Litestream** for replication (per ADR-001)
 
 **Shared Library:**
-- **Groundwork.Core** - .NET Standard 2.1 / .NET 10 class library
+- **Hub.Core** - .NET Standard 2.1 / .NET 10 class library
 - Shared business logic, models, data access across API and Web
 
-### 3. Component: Web API (Groundwork.Api)
+### 3. Component: Web API (Hub.Api)
 
 **Purpose:** RESTful API for future mobile apps and programmatic access
 
@@ -135,9 +135,9 @@ POST   /api/proposals/{id}/vote
 DELETE /api/posts/{id}
 ```
 
-**Deployment:** Can run standalone (API-only node) or alongside Blazor Server
+**Deployment:** Can run standalone (API-only) or alongside Blazor Server
 
-### 4. Component: Web Application (Groundwork.Web)
+### 4. Component: Web Application (Hub.Web)
 
 **Purpose:** Web-based interface for members and node operators
 
@@ -165,8 +165,8 @@ DELETE /api/posts/{id}
 
 **Technology (Planned):**
 - **.NET MAUI** (Multi-platform App UI)
-- Consumes **Groundwork.Api** REST endpoints
-- Shares **Groundwork.Core** models and business logic
+- Consumes **Hub.Api** REST endpoints
+- Shares **Hub.Core** models and business logic
 - **JWT authentication** for API access
 
 **Timeline:** Post-MVP, after web experience is proven
@@ -190,21 +190,21 @@ DELETE /api/posts/{id}
 
 ### 7. Deployment Modularity
 
-Node operators can choose deployment configuration:
+Operators can choose deployment configuration:
 
 **Option 1: Full Stack (API + Web)**
-- Run both Groundwork.Api and Groundwork.Web on same server
+- Run both Hub.Api and Hub.Web on same server
 - Share same SQLite database
 - Support web and future mobile users
 
 **Option 2: Web Only**
-- Run Groundwork.Web standalone
+- Run Hub.Web standalone
 - Blazor Server handles all interactions
 - No API exposed
 
 **Option 3: API Only**
-- Run Groundwork.Api standalone
-- Mobile-only neighborhood (no web interface)
+- Run Hub.Api standalone
+- Mobile-only community (no web interface)
 - Minimal resource usage
 
 **Implementation:** Use environment variables or configuration to enable/disable components
@@ -230,7 +230,7 @@ Node operators can choose deployment configuration:
 ### Positive Consequences
 
 - **Unified .NET ecosystem:** Single language and framework across all components
-- **Code sharing:** Groundwork.Core enables sharing models, services, and business logic
+- **Code sharing:** Hub.Core enables sharing models, services, and business logic
 - **Modular deployment:** Node operators choose what to run based on needs
 - **Future-proof for mobile:** API-first design supports native apps later
 - **Real-time updates:** SignalR built into Blazor Server enables live social feed
@@ -272,13 +272,13 @@ Node operators can choose deployment configuration:
 ### Implementation Phases
 
 **Phase 1: Core + Web (MVP)**
-- Build Groundwork.Core with domain models and EF Core setup
-- Build Groundwork.Web with Blazor Server
+- Build Hub.Core with domain models and EF Core setup
+- Build Hub.Web with Blazor Server
 - Implement authentication with ASP.NET Core Identity
 - Basic social features (posts, comments, members)
 
 **Phase 2: API Layer**
-- Build Groundwork.Api with REST endpoints
+- Build Hub.Api with REST endpoints
 - JWT authentication for programmatic access
 - OpenAPI/Swagger documentation
 
@@ -291,7 +291,7 @@ Node operators can choose deployment configuration:
 **Phase 4: Mobile Apps**
 - .NET MAUI iOS app
 - .NET MAUI Android app
-- Consume Groundwork.Api
+- Consume Hub.Api
 
 ### Performance Considerations
 - **Blazor Server connection limit:** ASP.NET Core supports thousands of concurrent SignalR connections; 5-50 users is negligible

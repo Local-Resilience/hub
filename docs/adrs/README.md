@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-Architecture Decision Records (ADRs) document significant architectural and governance decisions for Groundwork Commons. Each ADR captures the context, decision, and consequences of a choice made during the project.
+Architecture Decision Records (ADRs) document significant architectural and governance decisions for Hub. Each ADR captures the context, decision, and consequences of a choice made during the project.
 
 ## ADR Index
 

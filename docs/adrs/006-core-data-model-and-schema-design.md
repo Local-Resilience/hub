@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Groundwork Commons needs a content model that supports diverse neighborhood interactions while maintaining simplicity and flexibility. Unlike traditional social platforms optimized for viral engagement, we're building infrastructure for practical community needs: sharing information, coordinating resources, asking for help, making decisions, and facilitating local exchange.
+Hub needs a content model that supports diverse neighborhood interactions while maintaining simplicity and flexibility. Unlike traditional social platforms optimized for viral engagement, we're building infrastructure for practical community needs: sharing information, coordinating resources, asking for help, making decisions, and facilitating local exchange.
 
 ### Problem Statement
 

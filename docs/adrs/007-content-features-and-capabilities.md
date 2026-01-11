@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Groundwork Commons needs robust content handling capabilities that support meaningful community interactions while respecting the constraints of a small-scale, self-hosted platform. Unlike enterprise platforms with unlimited storage and CDN infrastructure, our content system must balance feature richness with operational simplicity for neighborhoods running their own infrastructure.
+Hub needs robust content handling capabilities that support meaningful community interactions while respecting the constraints of a small-scale, self-hosted platform. Unlike enterprise platforms with unlimited storage and CDN infrastructure, our content system must balance feature richness with operational simplicity for neighborhoods running their own infrastructure.
 
 ### Problem Statement
 
@@ -144,16 +144,16 @@ Operators choose storage backend via configuration:
 
 **Option 1: Filesystem Storage (Default)**
 ```
-/var/groundwork-commons/
+/var/hub/
 ├── data/
-│   └── groundwork.db           # SQLite database
+│   └── hub.db                  # SQLite database
 ├── media/
 │   ├── posts/{PostId}/
 │   │   ├── {filename}.jpg
 │   │   └── {filename}.pdf
 │   └── profiles/{UserId}/
 │       └── avatar.jpg
-└── backups/                    # Litestream replicas
+└── backups/                    # Litestream backups
 ```
 
 - Media stored alongside database on same filesystem
@@ -193,7 +193,7 @@ Operators choose storage backend via configuration:
 Per ADR-001, Litestream handles database replication. For media files:
 
 **If Litestream supports filesystem replication:**
-- Configure Litestream to replicate entire `/var/groundwork-commons/` directory
+- Configure Litestream to replicate entire `/var/hub/` directory
 - Media and database replicate together to same targets
 - Restoration restores both database and media atomically
 
@@ -522,7 +522,7 @@ Operators should plan for **5-10 GB storage** for multi-year operation.
 **Filesystem Storage:**
 ```bash
 STORAGE_BACKEND=filesystem
-STORAGE_PATH=/var/groundwork-commons/media
+STORAGE_PATH=/var/hub/media
 MAX_IMAGE_SIZE_MB=5
 MAX_FILE_SIZE_MB=10
 MAX_IMAGES_PER_POST=10

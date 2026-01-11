@@ -1,4 +1,4 @@
-# 001. Data Replication Strategy
+# 001. Data Backup Strategy
 
 ## Status
 
@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Groundwork Commons is designed for hyperlocal communities (5-50 members) who need resilient social infrastructure. The primary technical risk is data loss when a community member who operates the primary node becomes unavailable—whether due to hardware failure, leaving the community, losing moderation status, or infrastructure disruption (including post-disaster scenarios where cloud infrastructure may be unavailable).
+Hub is designed for hyperlocal communities (5-50 members) who need resilient social infrastructure. The primary technical risk is data loss when the community member operating the instance becomes unavailable—whether due to hardware failure, leaving the community, losing moderation status, or infrastructure disruption (including post-disaster scenarios where cloud infrastructure may be unavailable).
 
 ### Problem Statement
 We need a data replication strategy that:

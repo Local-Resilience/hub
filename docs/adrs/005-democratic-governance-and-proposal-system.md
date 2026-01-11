@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Groundwork Commons is built on the principle that technical infrastructure should enable democratic community governance. Unlike traditional social platforms where moderation and policy decisions are made by corporate employees or platform owners, Groundwork empowers neighborhood communities to make collective decisions through formal proposal and voting mechanisms.
+Hub is built on the principle that technical infrastructure should enable democratic community governance. Unlike traditional social platforms where moderation and policy decisions are made by corporate employees or platform owners, Hub empowers neighborhood communities to make collective decisions through formal proposal and voting mechanisms.
 
 The proposal system must balance:
 - **Democratic legitimacy:** Members can propose and vote on important decisions
@@ -153,7 +153,7 @@ Background job checks for proposals where `VotingEndsAt <= DateTime.UtcNow` and 
 ### 6. Governance Configuration
 
 **Community-Specific Settings:**
-Each Groundwork Commons instance can configure defaults via settings table:
+Each Hub instance can configure defaults via settings table:
 
 **Admin Configuration UI:**
 - Admins can modify these settings via admin panel
@@ -162,28 +162,27 @@ Each Groundwork Commons instance can configure defaults via settings table:
 
 ### 7. Member Onboarding and Node Operator Election
 
-**Initial Node Operator:**
+**Initial Instance Operator:**
 - **First user to set up instance becomes initial Admin**
 - Automatically assigned Admin role upon system initialization
 - No election needed for bootstrap
 
-**Subsequent Node Operators:**
+**Subsequent Admins:**
 - Communities decide their own process
-- Typically: Admin role = node operator
-- To add new node operator:
+- To add new admin:
   1. Create `AdminChange` proposal to grant Admin role to new member
   2. Community votes
-  3. If passed, new member becomes Admin (and can run replica node)
+  3. If passed, new member becomes Admin
 
 **Succession Planning:**
 - Communities encouraged to maintain multiple Admins for redundancy
-- Admins manage database replication to their own nodes
+- Admins should have access to backup locations for recovery
 - If Admin leaves community, use `AdminChange` proposal to remove role
 
-**Failover Coordination:**
-- Not technically enforced (per ADR-001: manual failover)
+**Recovery Coordination:**
+- Not technically enforced (per ADR-001: manual recovery)
 - Community coordinates via alternate communication channel
-- Admin with most recent database replica spins up new primary
+- Admin with backup access can restore and spin up new instance
 
 ### 8. User Interface
 
